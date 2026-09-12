@@ -1,0 +1,15 @@
+#!/command/with-contenv sh
+# Publish the environment Gazette's delivery needs, before any service starts.
+#
+# HERMES_MEDIA_ALLOW_DIRS: the gateway only delivers a `MEDIA:` path that
+# resolves under a Hermes media cache root or an operator allowlist. The
+# producer writes each edition to /srv/gazette/editions, which is neither
+# unless named here. Written into s6's environment directory rather than
+# exported: this runs in cont-init, and `with-contenv` is how the gateway and
+# everything under it pick the value up.
+set -eu
+
+OUT_DIR=/run/s6/container_environment
+mkdir -p "$OUT_DIR"
+printf '%s' "/srv/gazette" > "$OUT_DIR/HERMES_MEDIA_ALLOW_DIRS"
+echo "gazette-env: HERMES_MEDIA_ALLOW_DIRS=/srv/gazette" >&2

@@ -1,0 +1,5 @@
+# Everything in this repo runs inside a Linux container. LF everywhere, on
+# every platform a contributor clones from: a CRLF shebang is "no such file".
+* text=auto eol=lf
+*.ttf binary
+*.png binary

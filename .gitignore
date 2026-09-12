@@ -1,0 +1,8 @@
+# Written by `plow-agents mint`. The agent's own credential; never commit it.
+/plow-credentials
+/plow-credentials/
+
+# Local test output
+/out/
+__pycache__/
+*.pyc
