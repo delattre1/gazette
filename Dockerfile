@@ -38,6 +38,8 @@ RUN chown -R root:root /opt/gazette \
 RUN set -eu; \
     /opt/hermes/.venv/bin/python -c 'import PIL' 2>/dev/null \
       || uv pip install --python /opt/hermes/.venv/bin/python pillow==11.1.0; \
+    /opt/hermes/.venv/bin/python -c 'import requests' 2>/dev/null \
+      || uv pip install --python /opt/hermes/.venv/bin/python requests==2.32.3; \
     /opt/hermes/.venv/bin/python -c 'from PIL import Image, ImageFont; ImageFont.truetype("/opt/gazette/fonts/OldStandard-Regular.ttf", 24); Image.new("RGB", (8, 8))'
 
 # The usage reporter, fetched at build from the commit vendor/client.pin names

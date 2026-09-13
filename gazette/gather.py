@@ -18,6 +18,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 import common as c
+from images import enrich_items, rss_image
 
 TOPIC_ITEMS = 6
 HN_ITEMS = 10
@@ -95,12 +96,16 @@ def _rss_items(url: str, limit: int) -> list[dict]:
         # Google News titles end in " - Source"; keep the source once.
         if source and title.endswith(" - " + source):
             title = title[: -(len(source) + 3)]
-        out.append({
+        row = {
             "title": c.clip(title, 160),
             "source": c.clip(source, 60),
             "link": (item.findtext("link") or "").strip(),
             "published": (item.findtext("pubDate") or "").strip(),
-        })
+        }
+        thumb = rss_image(item)
+        if thumb:
+            row["image"] = thumb
+        out.append(row)
         if len(out) >= limit:
             break
     return out
@@ -243,6 +248,8 @@ def main() -> int:
         "city": (cfg.get("location") or {}).get("name") or cfg.get("city"),
         "language": lang,
         "units": cfg.get("units"),
+        "template": cfg.get("template") or "auto",
+        "photos": cfg.get("photos") or "bw",
         "weather": _attempt("weather", lambda: weather(cfg, today)),
         "topics": topics(cfg),
         "hackernews": _attempt("hackernews", hackernews),
@@ -251,11 +258,17 @@ def main() -> int:
                                                           now.replace(hour=23, minute=59, second=59, microsecond=0))),
         "on_this_day": _attempt("on_this_day", lambda: on_this_day(today, lang)),
     }
+    attached = 0
+    for block in out.get("topics") or []:
+        if isinstance(block, dict) and isinstance(block.get("items"), list):
+            attached += enrich_items(block["items"], limit=4, hint=block.get("topic") or "")
+    if isinstance(out.get("hackernews"), list):
+        attached += enrich_items(out["hackernews"], limit=4)
     c.write_json(c.TODAY_PATH, out)
     sizes = {k: (len(v) if isinstance(v, list) else ("error" if isinstance(v, dict) and "error" in v else "ok"))
              for k, v in out.items() if k in ("topics", "hackernews", "github", "calendar", "on_this_day", "weather")}
     print(json.dumps({"wrote": str(c.TODAY_PATH), "edition_number": out["edition_number"],
-                      "local_date": out["local_date"], "sources": sizes}))
+                      "local_date": out["local_date"], "sources": sizes, "images": attached}))
     return 0
 
 

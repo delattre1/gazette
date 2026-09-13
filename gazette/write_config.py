@@ -83,6 +83,21 @@ def validate(draft: dict) -> dict:
         out["google"] = bool(draft["google"])
     if "setup_complete" in draft:
         out["setup_complete"] = bool(draft["setup_complete"])
+    if "template" in draft:
+        face = str(draft["template"] or "auto").strip().lower()
+        if face not in ("auto", "times", "planet", "herald"):
+            raise SystemExit("template must be auto, times, planet or herald")
+        out["template"] = face
+    if "photos" in draft:
+        tone = str(draft["photos"] or "bw").strip().lower()
+        aliases = {
+            "bw": "bw", "black-and-white": "bw", "grayscale": "bw",
+            "grey": "bw", "preto e branco": "bw", "pb": "bw",
+            "color": "color", "colour": "color", "colorido": "color",
+        }
+        if tone not in aliases:
+            raise SystemExit("photos must be 'bw' or 'color'")
+        out["photos"] = aliases[tone]
     return out
 
 
@@ -132,6 +147,8 @@ def main() -> int:
         "topics": merged.get("topics"),
         "github": merged.get("github"),
         "language": merged.get("language"),
+        "template": merged.get("template"),
+        "photos": merged.get("photos"),
         "setup_complete": merged.get("setup_complete"),
     }, ensure_ascii=False))
     return 0

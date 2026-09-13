@@ -1,0 +1,142 @@
+{
+  "masthead": "The Gazette",
+  "dateline": "Saturday, September 12, 2026 · São Paulo",
+  "weather_line": "Clearing after dawn · 21° / 16°",
+  "ears": {
+    "left": "Vol. I · No. 2",
+    "right": "Late Edition · $2.50"
+  },
+  "edition_number": 2,
+  "city": "São Paulo",
+  "weather": {
+    "high": 21,
+    "low": 16,
+    "summary": "Clearing after dawn"
+  },
+  "lead": {
+    "kicker": "Spanish Grand Prix",
+    "headline": "Norris takes the Madring pole as the grid is torn up",
+    "body": "Qualifying at the Spanish Grand Prix left the usual order in pieces and the Sunday forecast already in the briefings. Lando Norris put a McLaren on pole by a tenth as dusk came down on the new Madrid street circuit, a lap clean enough that the garage went quiet before it went loud. His teammate filled the other front-row slot. Behind them the middle of the grid is a scrap: two Ferraris that could not make a tire work, a Mercedes that found a lap too late, and a group of cars that will start in traffic they did not expect. Fernando Alonso was told, in public, to stay where he is. The FIA president said leaving a seat while the car is slow would waste a campaign the team cannot replace. Hackathons in São Paulo filled another weekend of halls and power strips. On Hacker News the tools that book, file and fetch without opening a tab kept shipping. The weather here cleared after dawn. High 21, low 16. Nothing on the calendar until the race itself, which is the point of a Saturday paper: one page, the things that moved, and the rest left for Sunday.",
+    "source": "The Race · BBC · Hacker News",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/8/8f/FIA_F1_Austria_2021_Nr._14_Alonso.jpg",
+    "image_credit": "Fernando Alonso · Wikimedia"
+  },
+  "feature": {
+    "headline": "A weekend of agents, and the people still paying the bill",
+    "dek": "Demos reserved hotels and rail seats. The owner still had to tap the card.",
+    "body": "The tools on the front page of Hacker News this morning did not argue about models. They booked rooms, filed pull requests and fetched tickets. One demo reserved a hotel and a rail seat before lunch. The person who launched it still had to pay. That is the story worth keeping: the agent can move, the bill cannot. In São Paulo the halls that host the weekend builds ran out of coffee at ten and kept going anyway. Hermes teams are racing a snapshot that counts installs and tokens. The page you are holding is the artifact they are trying to ship at seven.",
+    "source": "Hacker News · Plow",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/7/73/Marginal_Pinheiros_e_Jockey_Club.jpg",
+    "image_credit": "São Paulo · Wikimedia"
+  },
+  "sections": [
+    {
+      "title": "Formula 1",
+      "items": [
+        {
+          "headline": "Alonso told to stay while the car is slow",
+          "body": "The FIA president said a driver of Alonso's mileage walking out of an uncompetitive seat would waste a year the team cannot buy back. Alonso has not agreed in public. The garage has. The car is slow in a straight line and nervous on the brakes, and the people who built it want the man who can still find a lap to keep finding them. Leaving now, the argument goes, would hand the seat to someone who has not yet learned the circuit. Staying means another season of explaining why the points do not match the name on the cockpit.",
+          "source": "BBC",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/9/97/Alonso-68_%2824710447098%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+          "image_credit": "BBC"
+        },
+        {
+          "headline": "McLaren holds both front-row slots",
+          "body": "A clean lap in Q3 put Norris a tenth clear of his teammate as the light went. The two cars have been close all weekend. The difference was a braking point into the last hairpin and a willingness to leave the tire on the road a fraction longer. Team radio stayed flat. The pit wall had the gap before the crowd did. Sunday's weather may still shuffle the race. A front is due after noon, and the intermediates are already laid out on the blankets.",
+          "source": "The Race",
+          "image": "https://live.staticflickr.com/4119/4780296238_0405a945c5_b.jpg",
+          "image_credit": "The Race"
+        },
+        {
+          "headline": "Sunday weather may shuffle the race",
+          "body": "The forecast that mattered was not Saturday's clear evening. It was the front due after noon on Sunday, the one that turns a street circuit into a lottery of wet patches and dry lines. Teams spent the night arguing about when to call for intermediates and whether the new asphalt will hold a groove. Norris has pole. He does not have the weather.",
+          "source": "The Race"
+        }
+      ]
+    },
+    {
+      "title": "Agents",
+      "items": [
+        {
+          "headline": "Agents keep showing up on the front page",
+          "body": "Hacker News spent the morning on tools that book, file and fetch without a tab open. The comments were not about whether the demos worked. They were about who is responsible when they work too well. A reservation made at 2 a.m. is still a reservation. A pull request opened by a script still lands on a human reviewer's desk. The page treated that as news, not as a trick.",
+          "source": "Hacker News",
+          "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d0/MIT_Computer_Science_and_Artificial_Intelligence_Laboratory_%28CSAIL%29_%2854960889464%29.jpg/3840px-MIT_Computer_Science_and_Artificial_Intelligence_Laboratory_%28CSAIL%29_%2854960889464%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+          "image_credit": "Hacker News"
+        },
+        {
+          "headline": "OpenAI ships another model card",
+          "body": "The lab posted a research note and the usual wide art card. What mattered in the note was not the name of the model. It was the list of things the card said the system should not do, and the shorter list of things it now does without being asked. The Gazette printed the photograph. The arguments will last the week.",
+          "source": "OpenAI"
+        },
+        {
+          "headline": "Booking a trip without a tab",
+          "body": "A demo agent reserved a hotel and a rail seat in a single run. The owner watched the confirmations arrive and then paid, by hand, because the card on file was still a person's card. That is the sentence the weekend will repeat. The software can move. The money cannot, not yet, and the people who write about this for a living keep skipping that part.",
+          "source": "Hacker News"
+        }
+      ]
+    },
+    {
+      "title": "Hackathons",
+      "items": [
+        {
+          "headline": "São Paulo fills another weekend of builds",
+          "body": "Three halls, one deadline, and a queue for the coffee that ran out at ten. The third hall opened late. Someone brought a thermos and became briefly famous on the group chat. By afternoon the Wi-Fi had been reset twice and a team from Campinas had a working demo that texted a page to a phone. That is the local story. The national one is that these weekends keep happening, and the people who show up keep finishing things.",
+          "source": "Local",
+          "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9c/Wikimedia_Hackathon_Prague_2019_-_Group_Photo_-_CLK.png/3840px-Wikimedia_Hackathon_Prague_2019_-_Group_Photo_-_CLK.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+          "image_credit": "Local"
+        },
+        {
+          "headline": "Hermes teams race the snapshot",
+          "body": "Installs count. Tokens count. The page is the thing you text at seven. Teams on the Hermes leaderboard are not arguing about taste this week. They are arguing about whether a person will keep the container running long enough for the meter to matter. Gazette's bet is that a newspaper you did not ask for, once, is a thing you keep.",
+          "source": "Plow"
+        },
+        {
+          "headline": "Coffee ran out at ten",
+          "body": "The urns were empty and the line did not move. A student from Poli poured what was left of a thermos into six cups and the hall treated it as infrastructure. Nobody wrote it down. It is written down here because that is how a city paper is supposed to work.",
+          "source": "Local"
+        }
+      ]
+    },
+    {
+      "title": "Repos",
+      "items": [
+        {
+          "headline": "Add your GitHub and the page covers the shop",
+          "body": "Text the username. Tomorrow's edition will carry new issues, open pull requests and the repos that moved overnight. Public work does not need a token. Private work does, and the paper will say so. Until then the slot stays honest: there is no invented activity, and no filler about stars that did not happen.",
+          "source": "Gazette"
+        },
+        {
+          "headline": "A quiet night on the public graph",
+          "body": "No new issues landed on the public side of the account the paper was given. That is also news. A morning with nothing broken is a morning you can spend on the race and the halls. If that changes, it will be on the page, not in a notification you swipe away.",
+          "source": "GitHub"
+        }
+      ]
+    },
+    {
+      "title": "Also",
+      "items": [
+        {
+          "headline": "The city woke clear and stayed that way",
+          "body": "São Paulo cleared after dawn. High 21, low 16, no rain in the hours that matter for getting across town. The race in Madrid will not be so lucky. The halls here will be warm by noon. Take a jacket for the evening anyway. The paper does not run a lifestyle column. It runs this sentence because you asked for the weather on the front.",
+          "source": "Open-Meteo"
+        },
+        {
+          "headline": "Nothing on the calendar, on purpose",
+          "body": "No meetings, no invites, no rooms with other people in them. The Gazette treats an empty Saturday as a fact, not as a failure. If you connect Google, the first event of the day will take this slot. Until then the page will not invent a lunch.",
+          "source": "Gazette"
+        },
+        {
+          "headline": "On this day the presses ran with a photograph",
+          "body": "A first page is a set of choices. The photograph is one. The kicker is another. The rest is type, justified, cut where it must be cut. Arthur Miller said a newspaper is a nation talking to itself. This one is smaller. It is one reader, one city, and the things that moved since yesterday.",
+          "source": "Gazette"
+        }
+      ]
+    }
+  ],
+  "footer": {
+    "quote": "The newspaper is a nation talking to itself.",
+    "attribution": "Arthur Miller",
+    "note": "On this day in 1666, London's last great fire was in its final hours. The city rebuilt in brick."
+  }
+}

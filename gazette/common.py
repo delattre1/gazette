@@ -54,6 +54,8 @@ DEFAULT_CONFIG = {
     "delivery_time": "07:00",
     "units": "metric",
     "google": False,
+    "template": "auto",
+    "photos": "bw",
     "setup_complete": False,
 }
 

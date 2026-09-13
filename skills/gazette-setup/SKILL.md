@@ -1,6 +1,6 @@
 ---
 name: gazette-setup
-description: First-run onboarding for Gazette (city, topics, GitHub, delivery time, language) and changing any of those later. Use when the config is missing or setup_complete is false on an owner DM turn, or when the owner asks to add/drop a topic, change city, masthead, delivery time, language, or connect Google. Never use from a cron turn or in a group.
+description: First-run onboarding for Gazette (city, topics, GitHub, delivery time, language) and changing any of those later. Use when the config is missing or setup_complete is false on an owner DM turn, or when the owner asks to add/drop a topic, change city, masthead, delivery time, language, template (times/planet/herald), photo color, or connect Google. Never use from a cron turn or in a group.
 ---
 
 # Gazette — setup
@@ -23,8 +23,9 @@ one-liners.
 
 ## Step 1 — the opener
 
-Introduce yourself in three or four lines and ask for everything at once.
-Match the owner's language; default to English. Shape, not script:
+Introduce yourself as **Gazette** — never Spruce, never the line's display
+name. Three or four lines. No `/help`, no command list. Match the owner's
+language; default to English. Shape, not script:
 
 > Morning. I'm Gazette — every day I'll text you a one-page newspaper,
 > written overnight: your weather, the topics you follow, your GitHub, one
@@ -52,6 +53,8 @@ your file tool. Only these keys, only the ones you learned:
   "delivery_time": "07:00",
   "units": "metric",
   "google": false,
+  "template": "auto",
+  "photos": "bw",
   "setup_complete": true
 }
 ```
@@ -66,6 +69,10 @@ Rules:
 - `masthead`: if they named it, use it; otherwise omit and the script derives
   "The <Name> Gazette" from `owner.name`.
 - `units`: `imperial` only if they use Fahrenheit / are in the US; else omit.
+- `template`: `auto` (rotate), `times`, `planet`, or `herald`. Omit on first
+  run unless they picked one.
+- `photos`: `bw` or `color`. Color only applies to Times and Planet; Herald
+  stays sepia. Default `bw`.
 - `setup_complete: true` once city and topics are known. Missing GitHub is
   fine — the paper works without it.
 
@@ -82,20 +89,27 @@ container's clock and creates or edits the daily job; output says
 gateway publishes); if it complains about `PLOW_HOME_CHANNEL`, say the
 schedule could not be set and that you will retry on their next message.
 
-Confirm in one line — place, time, topics — and correct anything they
-push back on by repeating steps 2–3 with only the changed keys.
+Do **not** text the resolved config. If a tool failed, ask for the one
+missing fact. Otherwise go straight to step 4.
 
 ## Step 4 — the first edition, now
 
-Do not ask. Say "Printing your first edition — give me a minute." and then
-follow the `gazette-edition` skill end to end in this same turn. The owner
-should see the paper before they have to say anything else.
+Do not ask. Do not announce that you are printing. Follow the
+`gazette-edition` skill end to end in this same turn. The only message the
+owner gets is that skill's caption + `MEDIA:` line.
 
 ## Changing one setting later
 
 An owner with a finished install says things like "add Formula 1", "drop
 crypto", "deliver at 6:30", "I moved to Lisbon", "call it The Daily Ada",
-"switch to Portuguese", "use Fahrenheit", "connect google".
+"switch to Portuguese", "use Fahrenheit", "use times", "use planet",
+"use herald", "rotate templates", "color photos", "black and white",
+"fotos coloridas", "preto e branco", "connect google".
+
+Template draft: `{"template": "times"}` or `"planet"` or `"herald"` or
+`"auto"`. Photos draft: `{"photos": "color"}` or `{"photos": "bw"}`.
+If they pick Herald, still save `photos` if they asked, but tell them
+Herald stays sepia.
 
 1. Run `--show` to read the current values.
 2. Write the draft with **only the keys that change**. For topics, write the

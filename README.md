@@ -7,7 +7,7 @@ on the topics you follow, what happened in your GitHub repos, your calendar
 (optional), and one thing from history — then writes a one-page paper, lays it
 out like a real front page, and sends it to your phone.
 
-![A sample edition](docs/sample-edition.png)
+![A sample edition](docs/sample-edition-v5-times.png)
 
 Gazette is a [Hermes Agent](https://github.com/NousResearch/hermes-agent)
 packaged as a [Plow](https://plow.co) agent: it reaches you over your own
@@ -44,7 +44,9 @@ message. It prints your first edition right away and schedules the next one.
 
 | You say | It does |
 |---|---|
-| `print today's paper` / `again` | a fresh edition, now |
+| `print today's paper` / `again` | a fresh edition, now (Times, Planet or Herald) |
+| `use times` / `use planet` / `use herald` | locks the face; `rotate templates` goes back to cycling |
+| `color photos` / `black and white` | Times and Planet; Herald stays sepia |
 | `share` | resends the latest picture |
 | `more on <story>` | the item, with its link |
 | `add Formula 1` / `drop crypto` | changes your topics |
