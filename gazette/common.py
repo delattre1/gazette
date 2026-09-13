@@ -27,7 +27,7 @@ DRAFT_PATH = STATE_DIR / "config.draft.json"
 TODAY_PATH = STATE_DIR / "today.json"
 EDITION_PATH = STATE_DIR / "edition.json"
 
-USER_AGENT = "Gazette/0.1 (+https://github.com/gazette-agent/gazette)"
+USER_AGENT = "Gazette/0.1 (+https://github.com/MAUXII/gazette)"
 HTTP_TIMEOUT = 20
 
 # Google News RSS locales by language code. Anything else falls back to en.

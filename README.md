@@ -1,147 +1,143 @@
 # Gazette
 
-**Your morning newspaper, written overnight by an agent and texted to you as a picture.**
+Your morning newspaper. An agent writes it overnight and texts you the page as a picture.
 
-Every day before you wake, Gazette gathers the weather for your city, the news
-on the topics you follow, what happened in your GitHub repos, your calendar
-(optional), and one thing from history — then writes a one-page paper, lays it
-out like a real front page, and sends it to your phone.
+Weather for your city, the topics you follow, your GitHub repos, the day's calendar if you opt in, and one thing from history. One sheet. Laid out like a front page.
 
-![A sample edition](docs/sample-edition-v5-times.png)
+Times (black and white) · Planet (color) · Herald (sepia, 1912 cafe paper)
 
-Gazette is a [Hermes Agent](https://github.com/NousResearch/hermes-agent)
-packaged as a [Plow](https://plow.co) agent: it reaches you over your own
-phone line (iMessage / SMS / RCS), runs in one Docker container, and needs no
-API keys of yours — inference goes through Plow with the credential you mint
-at install. MIT licensed.
+| [Times](docs/times.png) | [Planet](docs/planet.png) | [Herald](docs/herald.png) |
+| :---: | :---: | :---: |
+| ![Times](docs/times.png) | ![Planet](docs/planet.png) | ![Herald](docs/herald.png) |
 
-## Install (about five minutes)
+A [Hermes](https://github.com/NousResearch/hermes-agent) agent packaged for [Plow](https://plow.co): your own phone line (iMessage / SMS / RCS), one Docker container, no model API keys. Inference goes through Plow with the credential you mint at install. MIT licensed.
 
-You need Docker and a Plow account. Windows, macOS and Linux all work.
+## Install
+
+You need [Docker](https://docs.docker.com/get-docker/) and a [Plow](https://plow.co) account. Windows, macOS, and Linux all work. The first build takes a few minutes.
 
 ```sh
-# 1. The Plow CLI (mints the credential your agent runs under)
-git clone https://github.com/plow-pbc/plow-agents && cd plow-agents
-# follow its README to install `plow-agents`, then:
-plow-agents login --new-line     # texts you an activation code; provisions your agent's phone line
-plow-agents lines                # note the ln_… id of the line
+# 1. Plow CLI — keep this folder on your PATH
+git clone https://github.com/plow-pbc/plow-agents.git
+export PATH="$PWD/plow-agents/bin:$PATH"          # PowerShell: $env:PATH = "$PWD\plow-agents\bin;$env:PATH"
 
-# 2. Gazette
-git clone https://github.com/gazette-agent/gazette && cd gazette
-plow-agents mint ln_xxxxxxxx     # writes ./plow-credentials (never commit it)
+# 2. Log in from the phone that owns the account. --new-line gives Gazette its own number.
+plow-agents login --new-line
+plow-agents lines                                 # pick a free ln_… id
+
+# 3. This repo
+git clone https://github.com/MAUXII/gazette.git
+cd gazette
+plow-agents mint ln_xxxxxxxx                      # writes ./plow-credentials — never commit it
 docker compose up --build -d
 ```
 
-Then text your new number anything — "hi" is fine. Gazette introduces itself
-and asks four things: your **city**, **two to four topics**, your **GitHub
-username** (optional) and **what time** you want the paper. Answer in one
-message. It prints your first edition right away and schedules the next one.
+Watch `docker compose logs -f agent` until you see `plow-init: configured`. Then text the new number anything. `hi` is fine.
 
-> Keep the container running. The paper is written by a scheduled job inside
-> it, at the time you chose, in your timezone.
+Gazette asks four things: your **city**, **two to four topics**, your **GitHub username** (optional), and **what time** you want the paper. Answer in one message. It prints the first edition in that same turn and schedules the next one.
 
-### Things you can text it
+Keep the container running. The paper is written by a job inside it, at the time you chose, in your timezone.
+
+If `up` ran before `mint`, Docker may have created a `plow-credentials` directory. Tear it down and mint again:
+
+```sh
+docker compose down -v
+rmdir plow-credentials          # PowerShell: Remove-Item -Recurse plow-credentials
+plow-agents mint ln_xxxxxxxx
+docker compose up --build -d
+```
+
+A pull of the base image from `public.ecr.aws` can 403 on stale Docker credentials. `docker logout public.ecr.aws`, then build again.
+
+## Text it
 
 | You say | It does |
 |---|---|
-| `print today's paper` / `again` | a fresh edition, now (Times, Planet or Herald) |
-| `use times` / `use planet` / `use herald` | locks the face; `rotate templates` goes back to cycling |
+| `print today's paper` / `again` / `one more` | a fresh edition, now |
+| `use times` / `use planet` / `use herald` | lock the face |
+| `rotate templates` | cycle the three faces by edition number |
 | `color photos` / `black and white` | Times and Planet; Herald stays sepia |
-| `share` | resends the latest picture |
-| `more on <story>` | the item, with its link |
-| `add Formula 1` / `drop crypto` | changes your topics |
-| `deliver at 6:30` | changes the time |
-| `I moved to Lisbon` | changes the city (and the weather, and the timezone) |
-| `call it The Daily Ada` | renames the masthead |
-| `switch to Portuguese` | changes the language of the paper and the feeds |
-| `connect google` | opts in to your calendar (through your Plow account's Google connector) |
+| `share` / `send it again` | resends the latest page |
+| `more on <story>` | that item, with its link |
+| `add Formula 1` / `drop crypto` | topics |
+| `deliver at 6:30` | delivery time, local |
+| `I moved to Lisbon` | city, weather, timezone |
+| `call it The Daily Ada` | masthead |
+| `switch to Portuguese` | language of the paper and the feeds |
+| `connect google` | calendar on the front (Plow Google connector) |
 
-## What it reads, and what it does not
+`fotos coloridas` and `preto e branco` work the same as the English photo commands.
 
-By default, only public things: [Open-Meteo](https://open-meteo.com) for
-weather, Google News RSS for your topics, the Hacker News front page, the
-GitHub public API for your repos, and Wikipedia's "on this day". Nothing
-personal leaves the container; there is nothing to trust.
+## The three faces
 
-Google Calendar is **opt-in**. When you say `connect google`, tomorrow's
-edition carries the day's events (titles and times only), read through the
-Google connector on your Plow account.
+- **Times** — broadsheet. Lead photograph up top, type in even columns.
+- **Planet** — a square plate in the middle of the lead, type on both sides.
+- **Herald** — 1912 cafe paper, walnut ink, stacked display hed, always sepia.
 
-The agent never browses on its own and never invents a story: every line on
-the page traces to an item the gather step fetched. If a source is down, the
-page says so in one line and moves on.
+`template: auto` (the default) rotates them. Photographs sit on the lead and maybe one or two column items. Not every column gets a picture; the type fills the sheet. Text that does not fit is clipped. It never paints over the footer.
+
+## What it reads
+
+Public sources only, unless you opt in:
+
+- [Open-Meteo](https://open-meteo.com) for weather
+- Google News RSS for your topics
+- Hacker News front page
+- GitHub public API for your repos
+- Wikipedia "on this day"
+
+Nothing personal leaves the container. Google Calendar is opt-in (`connect google`): titles and times only, through your Plow account.
+
+The agent does not browse on its own and does not invent a story. Every line on the page traces to an item `gather.py` fetched. If a source is down, the page says so in one line and moves on.
+
+## Print a sample without Plow
+
+Python 3.11+ and Pillow. Network is needed only for the photographs in the sample JSON.
+
+```sh
+python -m pip install pillow
+python gazette/render.py --edition docs/sample-edition.json --out out/times.png --template times --date 2026-09-12
+python gazette/render.py --edition docs/sample-edition.json --out out/planet.png --template planet --date 2026-09-12
+python gazette/render.py --edition docs/sample-edition.json --out out/herald.png --template herald --date 2026-09-12
+```
+
+`docs/sample-edition.json` is a real edition. The three pages at the top of this README were rendered from it.
 
 ## How it works
 
 ```
-05:xx  cron fires  ─►  gather.py  ─►  today.json  ─►  the model writes edition.json
-                                                             │
-       your phone  ◄─  MEDIA: line  ◄─  render.py (Pillow)  ◄─┘
+your time  cron  →  gather.py  →  today.json  →  the model writes edition.json
+                                                          │
+     your phone  ←  MEDIA: line  ←  render.py (Pillow)  ←─┘
 ```
 
-- `gazette/gather.py` — fetches every source with the standard library, bounded
-  in size, one JSON file. Model-free.
-- The model (via the `gazette-edition` skill) reads that file and writes the
-  edition: masthead, lead story, sections, footer — as JSON against a fixed
-  schema. This is the only step that spends tokens.
-- `gazette/render.py` — lays the JSON out as an A4 page with Pillow: blackletter
-  masthead, dateline, a two-column lead, three columns of sections, a footer.
-  Text that does not fit is clipped, never allowed to break the page.
-- The agent ends its turn with `MEDIA:/srv/gazette/editions/<date>.png` and the
-  Plow chat plugin uploads it as a photo.
+- `gazette/gather.py` — fetches every source with the standard library. No model.
+- The model (skill `gazette-edition`) reads `today.json` and writes `edition.json` against a fixed schema. That is the only step that spends tokens.
+- `gazette/render.py` + `sheets.py` — A4 at 150 dpi (1240×1754), Pillow, three faces.
+- The turn ends with `MEDIA:/srv/gazette/editions/<date>.png`. Plow uploads the photo.
 
-The image is a variant of
-[`plow-pbc/plow-hermes-agent`](https://github.com/plow-pbc/plow-hermes-agent):
-that base owns boot, credentials, the phone line and the model; this repo adds
-a persona, two skills, the producer scripts and the Agent Index reporter.
+The image is a variant of [`plow-pbc/plow-hermes-agent`](https://github.com/plow-pbc/plow-hermes-agent). The base owns boot, credentials, the phone line, and the model. This repo adds the persona, two skills, the producer, and the Agent Index reporter.
 
 ```
-runtime/persona.md            who Gazette is
-skills/gazette-setup/         onboarding and later changes
-skills/gazette-edition/       the daily recipe the cron follows
-gazette/                      gather.py · render.py · write_config.py · register_cron.py · fonts/
-image/cont-init.d/            publishes HERMES_MEDIA_ALLOW_DIRS
-image/s6-overlay/             the agent-index usage reporter (s6 longrun)
-vendor/client.pin             pinned revision + checksum of the reporter
+runtime/persona.md         who Gazette is
+skills/gazette-setup/      onboarding and later changes
+skills/gazette-edition/    the daily recipe
+gazette/                   gather · render · sheets · images · write_config · register_cron · fonts · assets
+image/                     HERMES_MEDIA_ALLOW_DIRS and the Index reporter
 ```
 
-Configuration lives at `/var/lib/hermes/gazette/config.json` on the
-`gazette-home` volume. Editions are kept on the `gazette-editions` volume.
-Reset everything with `docker compose down -v`.
+Config lives at `/var/lib/hermes/gazette/config.json` on the `gazette-home` volume. Editions live on `gazette-editions`. `docker compose down` keeps both. `docker compose down -v` wipes them.
 
 ## Agent Index
 
-This image reports token usage to the
-[Agent Index](https://aiworthusing.com/agent-index) under the agent id
-`gazette` (set in `compose.yml`). Every install counts as one on Gazette's
-row. If you would rather not report, remove the `agent-index` service from
-`image/s6-overlay/` before building.
-
-## Development
-
-Run the producer outside the container against a scratch directory:
-
-```sh
-export GAZETTE_STATE=/tmp/gz GAZETTE_EDITIONS=/tmp/gz/out
-mkdir -p $GAZETTE_STATE
-echo '{"owner":{"name":"Ada"},"city":"Lisbon, Portugal","topics":["AI agents"],"github":"octocat","delivery_time":"07:00","setup_complete":true}' > $GAZETTE_STATE/config.draft.json
-python3 gazette/write_config.py
-python3 gazette/gather.py
-# write $GAZETTE_STATE/edition.json by hand (see the schema in skills/gazette-edition/SKILL.md)
-python3 gazette/render.py
-```
-
-Python 3.11+ and Pillow are the only requirements. Fonts are Old Standard TT
-and UnifrakturMaguntia, both under the SIL Open Font License (see
-`gazette/fonts/`).
+The image reports token usage to the [Agent Index](https://aiworthusing.com/agent-index) under `gazette` (`AGENT_ID` in `compose.yml`). Each install is one row. To stop reporting, remove `image/s6-overlay/` before you build.
 
 ## Credits
 
-The idea of an agent that prints you a morning paper was made popular by
-[Karen X. Cheng](https://x.com/karenxcheng)'s newspaper template. Gazette is
-the open-source, one-command, runs-anywhere version of it, built for the
-Hermes Hackathon.
+The morning-paper-as-a-picture idea was made popular by [Karen X. Cheng](https://x.com/karenxcheng). Gazette is the installable version, built for the Hermes Hackathon.
+
+Fonts: Old Standard TT, Unifraktur Maguntia, and Anton, all SIL OFL (`gazette/fonts/`). Herald paper texture and crest: see `gazette/assets/ATTRIBUTION.txt`.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — [LICENSE](LICENSE).

@@ -554,8 +554,8 @@ def _planet_wrap(img, d, y, stories, photos, floor) -> tuple[int, set[str]]:
     lead = _lead(stories)
     feat = _feat(stories)
     side = next((s for s in stories if s["kind"] == "item"), lead)
-    gutter = 16
-    side_w = 268
+    gutter = 20
+    side_w = 260
     thumb = r.CONTENT_W - 2 * side_w - 2 * gutter
     left_x = r.MARGIN
     photo_x = left_x + side_w + gutter

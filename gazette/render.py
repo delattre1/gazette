@@ -72,12 +72,27 @@ def span_width(n: int, colw: int) -> int:
 
 # --- text primitives ---------------------------------------------------------
 
+def ink_width(f: ImageFont.FreeTypeFont, text: str) -> float:
+    """Ink span. getlength undershoots Baskerville and the drop cap, so type
+    walked into the next column / the plate."""
+    text = str(text or "")
+    if not text:
+        return 0.0
+    try:
+        box = f.getbbox(text)
+        painted = float(box[2] - box[0]) if box else 0.0
+    except (AttributeError, OSError, TypeError):
+        painted = 0.0
+    return max(float(f.getlength(text)), painted)
+
+
 def fit(text: str, f: ImageFont.FreeTypeFont, width: int) -> str:
     """Clip a single line so it measures ≤ width."""
     text = " ".join(str(text or "").split())
-    if f.getlength(text) <= width:
+    width = max(1, width)
+    if ink_width(f, text) <= width:
         return text
-    while text and f.getlength(text + "…") > width:
+    while text and ink_width(f, text + "…") > width:
         text = text[:-1].rstrip()
     return (text + "…") if text else ""
 
@@ -85,17 +100,18 @@ def fit(text: str, f: ImageFont.FreeTypeFont, width: int) -> str:
 def wrap(text: str, f: ImageFont.FreeTypeFont, width: int, max_lines: int | None = None) -> list[str]:
     """Greedy word wrap. Over-long words are split. Past max_lines, the last
     kept line ends in an ellipsis."""
+    width = max(1, int(width) - 2)
     words = " ".join(str(text or "").split()).split(" ")
     lines: list[str] = []
     cur = ""
     for w in words:
         if not w:
             continue
-        while f.getlength(w) > width:
+        while ink_width(f, w) > width:
             lo, hi = 1, len(w)
             while lo < hi:
                 mid = (lo + hi + 1) // 2
-                if f.getlength(w[:mid] + "-") <= width:
+                if ink_width(f, w[:mid] + "-") <= width:
                     lo = mid
                 else:
                     hi = mid - 1
@@ -105,7 +121,7 @@ def wrap(text: str, f: ImageFont.FreeTypeFont, width: int, max_lines: int | None
             lines.append(w[:lo] + "-")
             w = w[lo:]
         trial = (cur + " " + w).strip()
-        if f.getlength(trial) <= width:
+        if ink_width(f, trial) <= width:
             cur = trial
         else:
             if cur:
@@ -116,7 +132,7 @@ def wrap(text: str, f: ImageFont.FreeTypeFont, width: int, max_lines: int | None
     if max_lines is not None and len(lines) > max_lines:
         lines = lines[:max_lines]
         last = lines[-1]
-        while last and f.getlength(last + "…") > width:
+        while last and ink_width(f, last + "…") > width:
             last = last[:-1].rstrip()
         lines[-1] = last + "…"
     return lines
@@ -134,18 +150,21 @@ def draw_text(draw: ImageDraw.ImageDraw, x: int, y: int, text: str, f: ImageFont
 def draw_justified(draw: ImageDraw.ImageDraw, x: int, y: int, line: str, f: ImageFont.FreeTypeFont,
                    width: int, fill=INK) -> None:
     words = line.split(" ")
-    if len(words) < 2 or f.getlength(line) > width * 0.98:
-        draw.text((x, y), line, font=f, fill=fill)
+    widths = [ink_width(f, w) for w in words]
+    total = sum(widths)
+    if len(words) < 2 or total > width * 0.98:
+        draw.text((x, y), fit(line, f, width), font=f, fill=fill)
         return
-    total_words = sum(f.getlength(w) for w in words)
-    gap = (width - total_words) / (len(words) - 1)
-    if gap > f.size * 1.2:
-        draw.text((x, y), line, font=f, fill=fill)
+    gap = (width - total) / (len(words) - 1)
+    if gap > f.size * 1.2 or gap < 0:
+        draw.text((x, y), fit(line, f, width), font=f, fill=fill)
         return
     cx = x
-    for w in words:
+    for w, ww in zip(words, widths):
+        if cx + ww > x + width + 0.5:
+            break
         draw.text((cx, y), w, font=f, fill=fill)
-        cx += f.getlength(w) + gap
+        cx += ww + gap
 
 
 def line_height(f, leading: float = 1.32) -> int:
@@ -608,10 +627,10 @@ def wrap_drop(text: str, f: ImageFont.FreeTypeFont, width: int, cap_w: int,
 
     while i < len(words):
         indent = cap_w if len(lines) < cap_lines else 0
-        avail = width - indent
+        avail = max(1, width - indent - 2)
         w = words[i]
         trial = (cur + " " + w).strip()
-        if f.getlength(trial) <= avail:
+        if ink_width(f, trial) <= avail:
             cur = trial
             i += 1
             continue
@@ -622,7 +641,7 @@ def wrap_drop(text: str, f: ImageFont.FreeTypeFont, width: int, cap_w: int,
         lo, hi = 1, len(w)
         while lo < hi:
             mid = (lo + hi + 1) // 2
-            if f.getlength(w[:mid] + "-") <= avail:
+            if ink_width(f, w[:mid] + "-") <= avail:
                 lo = mid
             else:
                 hi = mid - 1
@@ -636,8 +655,8 @@ def wrap_drop(text: str, f: ImageFont.FreeTypeFont, width: int, cap_w: int,
     if max_lines is not None and len(lines) > max_lines:
         lines = lines[:max_lines]
         last, ind = lines[-1]
-        avail = width - ind
-        while last and f.getlength(last + "…") > avail:
+        avail = max(1, width - ind - 2)
+        while last and ink_width(f, last + "…") > avail:
             last = last[:-1].rstrip()
         lines[-1] = (last + "…", ind)
     return lines
@@ -653,8 +672,12 @@ def draw_drop_cap(draw, x, y, text, body_f, width, max_lines=None, leading=1.30)
         return draw_paragraph(draw, x, y, text, body_f, width, max_lines, INK, True, leading)
     cap_f = font("bold", int(body_f.size * 3.6))
     cap_lines = 3
-    lh = int(body_f.size * leading)
-    cap_w = int(cap_f.getlength(cap)) + 8
+    lh = line_height(body_f, leading)
+    try:
+        box = cap_f.getbbox(cap)
+        cap_w = int(box[2] - box[0]) + 10 if box else int(cap_f.getlength(cap)) + 10
+    except (AttributeError, OSError, TypeError):
+        cap_w = int(cap_f.getlength(cap)) + 10
     draw.text((x, y - 6), cap, font=cap_f, fill=INK)
     lines = wrap_drop(rest, body_f, width, cap_w, cap_lines, max_lines)
     for i, (line, indent) in enumerate(lines):

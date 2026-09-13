@@ -2,7 +2,20 @@
 /plow-credentials
 /plow-credentials/
 
+# Downloaded to register the Index page; never commit it.
+/agent_index_client.py
+
 # Local test output
 /out/
 __pycache__/
 *.pyc
+
+# Working layouts. GitHub carries docs/{times,planet,herald}.png and the JSON.
+docs/sample-edition-v*.png
+docs/sample-tabloid.png
+docs/sample-tribune.png
+docs/sample-times.png
+docs/sample-planet.png
+docs/sample-herald.png
+docs/sample-edition.png
+docs/_*.png
