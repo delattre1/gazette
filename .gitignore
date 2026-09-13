@@ -4,6 +4,7 @@
 
 # Downloaded to register the Index page; never commit it.
 /agent_index_client.py
+/_register_index.sh
 
 # Local test output
 /out/
