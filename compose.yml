@@ -12,7 +12,7 @@ services:
       - ./plow-credentials:/var/lib/plow/credentials.host:ro
       # The agent's home, kept across `up`/`down`: config, memory, cron jobs,
       # and the install id the Index counts you under. Name it, never
-      # anonymous — a fresh volume is a fresh install on the leaderboard.
+      # anonymous: a fresh volume is a fresh install on the leaderboard.
       - gazette-home:/var/lib/hermes
       # Rendered editions, kept so you can browse or print past issues.
       - gazette-editions:/srv/gazette/editions

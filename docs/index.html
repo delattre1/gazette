@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>Gazette</title>
+  <meta name="description" content="Your morning paper, as a picture. Hermes agent for Plow.">
+  <meta property="og:title" content="Gazette">
+  <meta property="og:description" content="Your morning paper, as a picture.">
+  <meta property="og:image" content="planet.png">
+  <link rel="stylesheet" href="lpa.css">
+</head>
+<body class="is-loading">
+
+  <div class="loader" aria-hidden="true">
+    <div class="loader__word">Gazette</div>
+  </div>
+
+  <div class="scroll-progress" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="shell">
+      <a class="site-header__mark" href="#">Gazette</a>
+      <a class="site-header__link" href="https://github.com/MAUXII/gazette">GitHub</a>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="hero" id="top">
+      <div class="shell">
+        <p class="hero__tag">Hermes · Plow · MIT</p>
+        <h1 class="hero__title">Your morning paper, as a picture.</h1>
+        <p class="hero__lead">
+          Written overnight. Delivered to iMessage at the hour you chose.
+        </p>
+        <a class="btn btn--primary" href="#install">Get started</a>
+        <a class="btn btn--ghost" href="https://aiworthusing.com/agent-index/gazette">View on Agent Index</a>
+
+        <div class="hero__phone">
+          <img src="planet.png" alt="Gazette Planet edition on iPhone" width="390" height="844">
+        </div>
+      </div>
+    </section>
+
+    <section class="statements" id="story">
+      <div class="shell">
+        <p class="statements__label">Why</p>
+
+        <p class="scroll-fill">
+          One page instead of five apps.
+        </p>
+
+        <p class="scroll-fill">
+          A real front page: headline, columns, photo.
+        </p>
+
+        <p class="scroll-fill">
+          Ready when you wake up.
+        </p>
+      </div>
+    </section>
+
+    <section class="edition" id="edition">
+      <div class="shell">
+        <p class="edition__label">Three faces</p>
+        <h2 class="edition__title" id="edition-name">Planet</h2>
+        <p class="edition__desc" id="edition-desc">
+          Color by default. A photograph in the center, type on both sides.
+        </p>
+
+        <div class="segmented" role="tablist" aria-label="Edition face">
+          <button type="button" class="segmented__btn is-active" role="tab" aria-selected="true" data-face="0">Planet</button>
+          <button type="button" class="segmented__btn" role="tab" aria-selected="false" data-face="1">Times</button>
+          <button type="button" class="segmented__btn" role="tab" aria-selected="false" data-face="2">Herald</button>
+        </div>
+
+        <div class="edition__paper" id="edition-paper">
+          <img src="planet.png" alt="Gazette edition preview" width="620" height="877" id="edition-img">
+        </div>
+      </div>
+    </section>
+
+    <section class="facts">
+      <div class="shell">
+        <div class="fact">
+          <div class="fact__num">3</div>
+          <p class="fact__text">Templates. Planet ships first, in color.</p>
+        </div>
+        <div class="fact">
+          <div class="fact__num">0</div>
+          <p class="fact__text">Model API keys on your machine.</p>
+        </div>
+        <div class="fact">
+          <div class="fact__num">1</div>
+          <p class="fact__text">Message per day. No noise.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="compare" id="compare">
+      <div class="shell">
+        <h2 class="compare__title">Photo, not printer.</h2>
+        <div class="compare__row"><span>Delivery</span><span>PNG in iMessage</span></div>
+        <div class="compare__row"><span>Platform</span><span>Windows · Mac · Linux</span></div>
+        <div class="compare__row"><span>Setup</span><span>Docker + Plow line</span></div>
+        <div class="compare__row"><span>Share</span><span>Post your page</span></div>
+      </div>
+    </section>
+
+    <section class="install" id="install">
+      <div class="shell">
+        <h2 class="install__title">Install</h2>
+        <p class="install__sub">About ten minutes. One container, one phone line.</p>
+
+        <div class="code">
+          <pre id="install-cmds"><code><span class="code__line">git clone https://github.com/plow-pbc/plow-agents.git</span>
+<span class="code__line">export PATH="$PWD/plow-agents/bin:$PATH"</span>
+<span class="code__line">plow-agents login --new-line</span>
+<span class="code__line">git clone https://github.com/MAUXII/gazette.git</span>
+<span class="code__line">cd gazette && plow-agents mint ln_xxx</span>
+<span class="code__line">docker compose up --build -d</span></code></pre>
+        </div>
+
+        <button type="button" class="copy" id="copy-btn">Copy commands</button>
+
+        <p class="install__note">
+          Text <strong>hi</strong> to your new number. City, topics, delivery time in one reply.
+        </p>
+
+        <div class="install__links">
+          <a href="https://github.com/MAUXII/gazette">Repository</a>
+          <a href="https://aiworthusing.com/agent-index/gazette">Leaderboard</a>
+          <a href="https://x.com/karenxcheng/status/2097383854923538770">Inspired by Karen X. Cheng</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="shell">
+      <p>MIT · Hermes Hackathon</p>
+    </div>
+  </footer>
+
+  <script src="lpa.js" defer></script>
+</body>
+</html>

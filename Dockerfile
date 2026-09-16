@@ -1,4 +1,4 @@
-# Gazette — a Plow/Hermes agent that prints your morning newspaper.
+# Gazette: a Plow/Hermes agent that prints your morning newspaper.
 #
 # A variant of plow-pbc/plow-hermes-agent: persona + skills + one background
 # service (the Agent Index reporter). The base owns boot, credentials, the
@@ -19,6 +19,7 @@ COPY LICENSE /usr/share/doc/gazette/
 # updating what the agent has not touched, leaving customised ones alone.
 COPY skills/gazette-setup/   /opt/hermes/skills/gazette-setup/
 COPY skills/gazette-edition/ /opt/hermes/skills/gazette-edition/
+COPY skills/gazette-deliver/ /opt/hermes/skills/gazette-deliver/
 RUN find /opt/hermes/skills -mindepth 1 -type d -exec chmod 0755 {} + \
  && find /opt/hermes/skills -mindepth 1 -type f -exec chmod 0644 {} +
 
@@ -68,7 +69,7 @@ COPY --chmod=0755 image/cont-init.d/ /etc/cont-init.d/
 
 # State. /var/lib/hermes/gazette holds config.json and the day's gathered
 # data (agent-writable; lands on the home volume). /srv/gazette/editions holds
-# the rendered PNGs — outside /var/lib on purpose: Hermes refuses to deliver a
+# the rendered PNGs live outside /var/lib on purpose: Hermes refuses to deliver a
 # MEDIA: path under /var/lib, /etc, /var/run and friends.
 RUN install -d -o 10000 -g 10000 -m 0700 /var/lib/hermes/gazette \
  && install -d -o 10000 -g 10000 -m 0755 /srv/gazette /srv/gazette/editions

@@ -1,7 +1,7 @@
-"""Newspaper faces that wrap type around photographs — not posters.
+"""Newspaper faces that wrap type around photographs, not posters.
 
 Times stays in render.py. Planet and Herald live here: same folio and pack,
-different plates. Herald is the 1912 cafe-paper face — stacked display hed,
+different plates. Herald is the 1912 cafe-paper face: stacked display hed,
 landscape plate in the middle, walnut ink on a real 1902 sheet.
 """
 from __future__ import annotations
@@ -14,7 +14,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageOp
 
 import common as c
 import render as r
-from images import photo_aspect
+from images import fetch_photo, photo_aspect, _raster_url
 
 _PAPER_TEX = c.HERE / "assets" / "paper-aged.jpg"
 _CREST = c.HERE / "assets" / "herald-crest.png"
@@ -142,9 +142,14 @@ def _photos(stories) -> list[tuple[str, str, float]]:
     seen, rows = set(), []
     for s in stories:
         url = s.get("image") or ""
-        if url and url not in seen:
-            rows.append((url, s.get("image_credit") or s.get("source") or "", photo_aspect(url)))
-            seen.add(url)
+        if not url or url in seen or not _raster_url(url):
+            continue
+        try:
+            fetch_photo(url)
+        except Exception:
+            continue
+        rows.append((url, s.get("image_credit") or s.get("source") or "", photo_aspect(url)))
+        seen.add(url)
     return rows
 
 
@@ -153,12 +158,35 @@ def _pick(photos, used, prefer="any"):
     if not rest:
         return ("", "", 1.0)
     if prefer == "portrait":
-        tall = [p for p in rest if p[2] < 1.05]
-        return min(tall or rest, key=lambda p: p[2])
-    if prefer == "land":
-        wide = [p for p in rest if p[2] >= 1.05]
-        return max(wide or rest, key=lambda p: p[2])
-    return rest[0]
+        order = sorted(rest, key=lambda p: p[2])
+    elif prefer == "land":
+        order = sorted(rest, key=lambda p: -p[2])
+    else:
+        order = rest
+    for p in order:
+        try:
+            fetch_photo(p[0])
+            return p
+        except Exception:
+            continue
+    return ("", "", 1.0)
+
+
+def _pick_hero(photos, stories, used, prefer="land"):
+    """Master Head: lead story first, then best landscape that is not a building."""
+    lead = _lead(stories)
+    if lead.get("image"):
+        for p in photos:
+            if p[0] == lead["image"] and p[0] not in used:
+                try:
+                    fetch_photo(p[0])
+                    return p
+                except Exception:
+                    break
+    from images import _looks_building_url
+
+    rest = [p for p in photos if p[0] not in used and not _looks_building_url(p[0])]
+    return _pick(rest or [p for p in photos if p[0] not in used], used, prefer)
 
 
 def _lead(stories):
@@ -427,10 +455,10 @@ def _tribune_wrap(img, d, y, stories, photos, floor) -> tuple[int, set[str]]:
     y0 = y
 
     hero = _pick(photos, used, "portrait")
-    photo_bottom = y0
-    if hero[0]:
-        photo_bottom = r.place_photo(img, d, photo_x, y0, plate_w, 0, hero[0], hero[1], floor=floor)
-        used.add(hero[0])
+    photo_bottom, have = _try_plate(img, d, photo_x, y0, plate_w, 0, hero, used, floor, mode="natural")
+    if not have:
+        photo_bottom = y0 + 360
+        _well(d, photo_x, y0, plate_w, photo_bottom, _overflow(stories, {lead.get("headline")}))
     d.line([(photo_x - gutter // 2, y0), (photo_x - gutter // 2, min(photo_bottom, floor))], fill=r.HAIR, width=1)
     d.line([(right_x - gutter // 2, y0), (right_x - gutter // 2, min(photo_bottom, floor))], fill=r.HAIR, width=1)
 
@@ -488,14 +516,17 @@ def _herald_wrap(img, d, y, stories, photos, floor) -> tuple[int, set[str]]:
     y0 = y
 
     hero = _pick(photos, used, "land")
-    photo_h = min(300, r.plate_h(hero[0], plate_w, ceiling=300)) if hero[0] else 220
-    photo_bottom = y0 + photo_h
-    if hero[0]:
-        photo_bottom = r.place_photo(
-            img, d, photo_x, y0, plate_w, photo_h, hero[0], hero[1],
-            floor=floor, mode="natural",
+    photo_h = min(300, r.plate_h(hero[0], plate_w, ceiling=300)) if hero[0] else 260
+    photo_bottom, have = _try_plate(
+        img, d, photo_x, y0, plate_w, photo_h, hero, used, floor, mode="natural",
+    )
+    if not have:
+        photo_bottom = y0 + photo_h
+        _well(
+            d, photo_x, y0, plate_w, photo_bottom,
+            _overflow(stories, {lead.get("headline"), side.get("headline")}),
+            drop=True,
         )
-        used.add(hero[0])
 
     extra = [s.get("body") or "" for s in stories if s is not lead and s is not side and s.get("body")]
     ly = y0
@@ -519,6 +550,34 @@ def _herald_wrap(img, d, y, stories, photos, floor) -> tuple[int, set[str]]:
     if feat:
         y = _feature_band(img, d, y, feat, photos, used, floor)
     return y, used, {side.get("headline")}
+
+
+def _overflow(stories, skip=None) -> list[str]:
+    skip = set(skip or ())
+    out = []
+    for s in stories:
+        if s.get("headline") in skip:
+            continue
+        for key in ("body", "dek"):
+            if s.get(key):
+                out.append(s[key])
+    return out
+
+
+def _well(d, x, y, w, target, texts, drop=False) -> int:
+    """Two columns of type where a plate would have been."""
+    return r.fill_two_cols(d, x, y, w, target, texts, size=15, drop=drop)
+
+
+def _try_plate(img, d, x, y, w, h, photo, used, floor, mode="cover") -> tuple[int, bool]:
+    """Paste a photograph. On miss, return (y, False) — caller fills with type."""
+    if not photo or not photo[0]:
+        return y, False
+    nxt = r.place_photo(img, d, x, y, w, h, photo[0], photo[1], floor=floor, mode=mode)
+    if nxt <= y:
+        return y, False
+    used.add(photo[0])
+    return nxt, True
 
 
 def _fill_to(d, x, y, w, texts, target, size=15, drop=False) -> int:
@@ -562,13 +621,18 @@ def _planet_wrap(img, d, y, stories, photos, floor) -> tuple[int, set[str]]:
     right_x = photo_x + thumb + gutter
     y0 = y
 
-    hero = _pick(photos, used, "land")
-    photo_bottom = y0 + thumb
-    if hero[0]:
-        photo_bottom = r.place_photo(
-            img, d, photo_x, y0, thumb, thumb, hero[0], hero[1], floor=floor, mode="cover",
+    hero = _pick_hero(photos, stories, used, "land")
+    photo_bottom, have = _try_plate(
+        img, d, photo_x, y0, thumb, thumb, hero, used, floor, mode="cover",
+    )
+    if not have:
+        photo_bottom = y0 + thumb
+        _well(
+            d, photo_x, y0, thumb, photo_bottom,
+            _overflow(stories, {lead.get("headline"), side.get("headline")})
+            + [lead.get("body") or "", side.get("body") or ""],
+            drop=True,
         )
-        used.add(hero[0])
 
     extra = [
         s.get("body") or ""
@@ -615,10 +679,12 @@ def _tabloid_wrap(img, d, y, stories, photos, floor) -> tuple[int, set[str]]:
     if lead.get("dek"):
         ly = r.draw_paragraph(d, r.MARGIN, ly + 4, lead["dek"], r.font("italic", 16), left_w, 2, r.INK, False, 1.2)
     hero = _pick(photos, used, "any")
-    py = y0
-    if hero[0]:
-        py = r.place_photo(img, d, r.MARGIN + left_w + gutter, y0, plate_w, 0, hero[0], hero[1], floor=floor)
-        used.add(hero[0])
+    py, have = _try_plate(
+        img, d, r.MARGIN + left_w + gutter, y0, plate_w, 0, hero, used, floor, mode="natural",
+    )
+    if not have:
+        py = y0 + 220
+        _well(d, r.MARGIN + left_w + gutter, y0, plate_w, py, _overflow(stories, {lead.get("headline")}))
     ly = _body_cols(d, r.MARGIN, ly + 8, lead.get("body") or "", left_w, 2, 9, drop=True)
     y = max(ly, py) + 8
     y = r.rule(d, y, weight=2) + 10
@@ -628,10 +694,12 @@ def _tabloid_wrap(img, d, y, stories, photos, floor) -> tuple[int, set[str]]:
             y = r.draw_paragraph(d, r.MARGIN, y + 4, feat["dek"], r.font("italic", 14), r.CONTENT_W - colw - gutter, 2, r.INK, False, 1.2)
         extra = _pick(photos, used, "any")
         feat_y0 = y
-        py = feat_y0
-        if extra[0]:
-            py = r.place_photo(img, d, r.MARGIN + left_w + gutter, feat_y0, plate_w, 0, extra[0], extra[1], floor=floor)
-            used.add(extra[0])
+        py, have = _try_plate(
+            img, d, r.MARGIN + left_w + gutter, feat_y0, plate_w, 0, extra, used, floor, mode="natural",
+        )
+        if not have:
+            py = feat_y0 + 160
+            _well(d, r.MARGIN + left_w + gutter, feat_y0, plate_w, py, [feat.get("body") or feat.get("dek") or ""])
         y = _body_cols(d, r.MARGIN, y + 6, feat.get("body") or "", left_w, 2, 6)
         y = max(y, py)
         y = r.rule(d, y + 4, weight=1) + 8
@@ -646,12 +714,12 @@ def _feature_band(img, d, y, feat, photos, used, floor) -> int:
     y0 = y
     y = _hed(d, r.MARGIN, y, feat.get("headline") or "", 28, feat_w, 3)
     extra = _pick(photos, used, "any")
-    photo_bottom = y0
-    if extra[0]:
-        photo_bottom = r.place_photo(
-            img, d, r.MARGIN + feat_w + gutter, y0, colw, 150, extra[0], extra[1], floor=floor,
-        )
-        used.add(extra[0])
+    photo_bottom, have = _try_plate(
+        img, d, r.MARGIN + feat_w + gutter, y0, colw, 150, extra, used, floor, mode="cover",
+    )
+    if not have:
+        photo_bottom = y0 + 150
+        _well(d, r.MARGIN + feat_w + gutter, y0, colw, photo_bottom, [feat.get("body") or feat.get("dek") or ""])
     if feat.get("dek"):
         y = r.draw_paragraph(d, r.MARGIN, y + 4, feat["dek"], r.font("italic", 15), feat_w, 2, r.INK, False, 1.2)
     y = _body_cols(d, r.MARGIN, y + 6, feat.get("body") or "", feat_w, 3, 6)
@@ -670,10 +738,10 @@ def _photo_pair(img, d, y, a, b, items, used, floor) -> int:
         (xs[2], xs[3], b, items[1] if len(items) > 1 else None),
     )
     for px, tx, photo, story in pairs:
-        py = y
-        if photo[0]:
-            py = r.place_photo(img, d, px, y, colw, 140, photo[0], photo[1], floor=floor)
-            used.add(photo[0])
+        py, have = _try_plate(img, d, px, y, colw, 140, photo, used, floor, mode="cover")
+        if not have and story and story.get("body"):
+            py = y + 140
+            _well(d, px, y, colw, py, [story.get("body") or story.get("headline") or ""])
         ty = y
         if story:
             ty = _hed(d, tx, y, story.get("headline") or "", 18, colw, 4)

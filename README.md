@@ -10,6 +10,8 @@ Times (black and white) · Planet (color) · Herald (sepia, 1912 cafe paper)
 | :---: | :---: | :---: |
 | ![Times](docs/times.png) | ![Planet](docs/planet.png) | ![Herald](docs/herald.png) |
 
+**Landing page:** https://get-gazette.vercel.app (source in [`site/`](site/), `npm run dev`). Legacy static version: [`docs/index.html`](docs/index.html).
+
 A [Hermes](https://github.com/NousResearch/hermes-agent) agent packaged for [Plow](https://plow.co): your own phone line (iMessage / SMS / RCS), one Docker container, no model API keys. Inference goes through Plow with the credential you mint at install. MIT licensed.
 
 ## Install
@@ -17,7 +19,7 @@ A [Hermes](https://github.com/NousResearch/hermes-agent) agent packaged for [Plo
 You need [Docker](https://docs.docker.com/get-docker/) and a [Plow](https://plow.co) account. Windows, macOS, and Linux all work. The first build takes a few minutes.
 
 ```sh
-# 1. Plow CLI — keep this folder on your PATH
+# 1. Plow CLI (keep bin on your PATH)
 git clone https://github.com/plow-pbc/plow-agents.git
 export PATH="$PWD/plow-agents/bin:$PATH"          # PowerShell: $env:PATH = "$PWD\plow-agents\bin;$env:PATH"
 
@@ -28,7 +30,7 @@ plow-agents lines                                 # pick a free ln_… id
 # 3. This repo
 git clone https://github.com/MAUXII/gazette.git
 cd gazette
-plow-agents mint ln_xxxxxxxx                      # writes ./plow-credentials — never commit it
+plow-agents mint ln_xxxxxxxx                      # writes ./plow-credentials. Never commit it.
 docker compose up --build -d
 ```
 
@@ -36,7 +38,7 @@ Watch `docker compose logs -f agent` until you see `plow-init: configured`. Then
 
 Gazette asks four things: your **city**, **two to four topics**, your **GitHub username** (optional), and **what time** you want the paper. Answer in one message. It prints the first edition in that same turn and schedules the next one.
 
-Keep the container running. The paper is written by a job inside it, at the time you chose, in your timezone.
+Keep the container running. The paper **lands** at the time you chose, in your timezone. The press starts about twenty minutes earlier so gather and layout finish first.
 
 If `up` ran before `mint`, Docker may have created a `plow-credentials` directory. Tear it down and mint again:
 
@@ -54,8 +56,9 @@ A pull of the base image from `public.ecr.aws` can 403 on stale Docker credentia
 | You say | It does |
 |---|---|
 | `print today's paper` / `again` / `one more` | a fresh edition, now |
-| `use times` / `use planet` / `use herald` | lock the face |
+| `use times` / `use planet` / `use herald` | lock the face (first install is Planet, color) |
 | `rotate templates` | cycle the three faces by edition number |
+| `reset` / `reset my profile` | wipe the profile (asks first); next `hi` is first contact |
 | `color photos` / `black and white` | Times and Planet; Herald stays sepia |
 | `share` / `send it again` | resends the latest page |
 | `more on <story>` | that item, with its link |
@@ -70,11 +73,11 @@ A pull of the base image from `public.ecr.aws` can 403 on stale Docker credentia
 
 ## The three faces
 
-- **Times** — broadsheet. Lead photograph up top, type in even columns.
-- **Planet** — a square plate in the middle of the lead, type on both sides.
-- **Herald** — 1912 cafe paper, walnut ink, stacked display hed, always sepia.
+- **Times**: broadsheet. Lead photograph up top, type in even columns.
+- **Planet**: a square plate in the middle of the lead, type on both sides.
+- **Herald**: 1912 cafe paper, walnut ink, stacked display hed, always sepia.
 
-`template: auto` (the default) rotates them. Photographs sit on the lead and maybe one or two column items. Not every column gets a picture; the type fills the sheet. Text that does not fit is clipped. It never paints over the footer.
+The first install is **Planet, color**. `rotate templates` cycles the three faces. Photographs sit on the lead and maybe one or two column items: real photos, not title cards. Not every column gets a picture; the type fills the sheet. Copy that overruns a box ends on a finished sentence. It never paints over the footer.
 
 ## What it reads
 
@@ -111,9 +114,9 @@ your time  cron  →  gather.py  →  today.json  →  the model writes edition.
      your phone  ←  MEDIA: line  ←  render.py (Pillow)  ←─┘
 ```
 
-- `gazette/gather.py` — fetches every source with the standard library. No model.
+- `gazette/gather.py` fetches every source with the standard library. No model.
 - The model (skill `gazette-edition`) reads `today.json` and writes `edition.json` against a fixed schema. That is the only step that spends tokens.
-- `gazette/render.py` + `sheets.py` — A4 at 150 dpi (1240×1754), Pillow, three faces.
+- `gazette/render.py` + `sheets.py`: A4 at 150 dpi (1240×1754), Pillow, three faces.
 - The turn ends with `MEDIA:/srv/gazette/editions/<date>.png`. Plow uploads the photo.
 
 The image is a variant of [`plow-pbc/plow-hermes-agent`](https://github.com/plow-pbc/plow-hermes-agent). The base owns boot, credentials, the phone line, and the model. This repo adds the persona, two skills, the producer, and the Agent Index reporter.
@@ -140,4 +143,4 @@ Fonts: Old Standard TT, Unifraktur Maguntia, and Anton, all SIL OFL (`gazette/fo
 
 ## License
 
-MIT — [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

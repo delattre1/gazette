@@ -11,6 +11,7 @@ What is left after the page, the repo, and the Index row. The object exists. Thi
 - README, MIT, reporter baked in (`AGENT_ID: gazette`)
 - Public repo: https://github.com/MAUXII/gazette
 - Index page: https://aiworthusing.com/agent-index/gazette
+- Landing: https://get-gazette.vercel.app (Vercel project `gazette`, root `site/`)
 - Container is up and reporting usage under `gazette`
 
 Do not commit `plow-credentials`. Old `docs/sample-edition-v*.png` stay on disk only.
@@ -29,11 +30,11 @@ docker compose up --build -d
 docker compose logs -f agent
 ```
 
-### 2. 14 Sep — verified + one-click
+### 2. 14 Sep: verified + one-click
 
 On https://aiworthusing.com/agent-index/gazette : **Get my agent verified**.
 
-On Discord: **danedelattre** — Gazette is the Karen newspaper; you want it on Plow one-click. That button is theirs, not this repo.
+On Discord: **danedelattre**. Gazette is the Karen newspaper; you want it on Plow one-click. That button is theirs, not this repo.
 
 ### 3. Spread (installs, not likes)
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""write_config.py — turn the onboarding draft into the live config.
+"""write_config.py: turn the onboarding draft into the live config.
 
 The model writes what the owner said to a fixed handoff file
 (config.draft.json) with its file tool; this script validates it, resolves
@@ -9,6 +9,7 @@ owner's words as arguments, so a prompt-injected turn has no argv to steer.
 
 Usage: write_config.py            # apply the draft
        write_config.py --show     # print the live config
+       write_config.py --reset    # wipe the owner's Gazette profile
 """
 from __future__ import annotations
 
@@ -104,7 +105,19 @@ def validate(draft: dict) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--show", action="store_true")
+    ap.add_argument("--reset", action="store_true", help="wipe config and the day's copy")
     args = ap.parse_args()
+
+    if args.reset:
+        removed = []
+        for path in (c.CONFIG_PATH, c.DRAFT_PATH, c.TODAY_PATH, c.EDITION_PATH):
+            try:
+                path.unlink()
+                removed.append(path.name)
+            except FileNotFoundError:
+                pass
+        print(json.dumps({"reset": True, "removed": removed}))
+        return 0
 
     if args.show:
         try:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""render.py — lay out edition.json as a one-page broadsheet PNG.
+"""render.py: lay out edition.json as a one-page broadsheet PNG.
 
 Layout is code, content is the model's. The template is a four-column
 Times-style front: motto bar, blackletter nameplate, folio, lead with
@@ -131,10 +131,15 @@ def wrap(text: str, f: ImageFont.FreeTypeFont, width: int, max_lines: int | None
         lines.append(cur)
     if max_lines is not None and len(lines) > max_lines:
         lines = lines[:max_lines]
-        last = lines[-1]
-        while last and ink_width(f, last + "…") > width:
-            last = last[:-1].rstrip()
-        lines[-1] = last + "…"
+        last = lines[-1].rstrip("…,. ")
+        # Keep a finished sentence if we can; never a trailing ellipsis on body.
+        cut = max(last.rfind("."), last.rfind("!"), last.rfind("?"))
+        if cut >= 8:
+            last = last[: cut + 1]
+        if last:
+            lines[-1] = last
+        else:
+            lines.pop()
     return lines
 
 
@@ -341,6 +346,18 @@ def _today_photos() -> list[dict]:
     rows: list[dict] = []
     blocks = list(today.get("topics") or [])
     extra = today.get("hackernews") or []
+    hero = today.get("hero_image")
+    if isinstance(hero, dict) and hero.get("url"):
+        rows.append({
+            "url": hero["url"],
+            "title": "hero",
+            "credit": hero.get("credit") or "",
+            "topic": "",
+        })
+        seen.add(hero["url"])
+    elif isinstance(hero, str) and hero.startswith("http"):
+        rows.append({"url": hero, "title": "hero", "credit": "", "topic": ""})
+        seen.add(hero)
     for block in blocks:
         topic = (block.get("topic") or "") if isinstance(block, dict) else ""
         items = (block.get("items") or []) if isinstance(block, dict) else []
@@ -405,8 +422,8 @@ def _best_photo(headline: str, pool: list[dict], used: set[str], min_score: int 
         if photo_aspect(p["url"]) < 1.05 and not _person_names(headline):
             continue
         sc = _score_photo(headline, p)
-        if photo_aspect(p["url"]) >= 1.25:
-            sc += 3
+        if _looks_building(p):
+            sc -= 6
         if sc > score:
             best, score = p, sc
     return best if score >= min_score else None
@@ -443,25 +460,42 @@ def backfill_photos(ed: dict) -> None:
     """The model often writes edition.json with no image URLs. Fill them from
     today.json so the page is never a single leftover building."""
     pool = _today_photos()
-    if not pool:
-        return
     used: set[str] = set()
 
-    def assign(obj: dict, headline: str, fallback: bool = False) -> None:
+    def assign(obj: dict, headline: str, fallback: bool = False, any_photo: bool = False) -> None:
         current = obj.get("image") or ""
         if current and current not in used:
-            used.add(current)
-            return
+            try:
+                fetch_photo(current)
+                used.add(current)
+                return
+            except Exception:
+                obj["image"] = ""
         hit = _best_photo(headline, pool, used, min_score=2)
         if not hit and fallback:
             hit = _topic_fallback(headline, pool, used)
+        if not hit and any_photo:
+            for p in pool:
+                if p["url"] in used:
+                    continue
+                try:
+                    fetch_photo(p["url"])
+                except Exception:
+                    continue
+                hit = p
+                break
         if hit:
             obj["image"] = hit["url"]
             obj.setdefault("image_credit", hit["credit"])
             used.add(hit["url"])
 
     lead = ed.setdefault("lead", {})
-    assign(lead, lead.get("headline") or "", fallback=True)
+    if lead.get("image"):
+        try:
+            fetch_photo(lead["image"])
+        except Exception:
+            lead["image"] = ""
+    assign(lead, lead.get("headline") or "", fallback=True, any_photo=True)
 
     feat = ed.get("feature")
     if isinstance(feat, dict) and feat.get("headline"):
@@ -499,16 +533,17 @@ def pick_hero(ed: dict) -> tuple[str, str]:
 # Photo highlights stay a step darker than the page. A white racing suit
 # or studio wall must still read as paper-in-the-plate, not vanish.
 PHOTO_WHITE = (204, 200, 190)
-PHOTO_TONE = "ink"
+PHOTO_TONE = "color"
 
 
 def to_newsprint(photo: Image.Image) -> Image.Image:
     """Plate on paper. Herald is sepia; Times/Planet are ink or color."""
     if PHOTO_TONE == "color":
         rgb = photo.convert("RGB")
-        rgb = ImageEnhance.Contrast(rgb).enhance(1.08)
-        rgb = ImageEnhance.Color(rgb).enhance(0.94)
-        rgb = ImageEnhance.Sharpness(rgb).enhance(1.06)
+        rgb = ImageEnhance.Contrast(rgb).enhance(1.10)
+        rgb = ImageEnhance.Color(rgb).enhance(1.14)
+        rgb = ImageEnhance.Sharpness(rgb).enhance(1.08)
+        rgb = ImageEnhance.Brightness(rgb).enhance(1.03)
         return rgb
     gray = photo.convert("L")
     gray = ImageEnhance.Brightness(gray).enhance(0.86)
@@ -582,18 +617,45 @@ def place_photo(img: Image.Image, draw, x, y, max_w, max_h, url: str, caption: s
         cap_x, cap_w = ox, pw
     except Exception as exc:  # noqa: BLE001
         c.log(f"render: photo failed ({type(exc).__name__}: {exc})")
-        ph = max(48, int(max_h) if max_h and max_h > 40 else 160)
-        if floor is not None and y + ph + cap > floor:
-            return y
-        box(draw, x, y, max_w, ph, 1)
-        draw_text(draw, x, y + ph // 2 - 8, "Photograph unavailable", font("italic", 14), GREY, max_w, "center")
-        cap_x, cap_w = x, max_w
+        return y
     cap_y = y + ph + 3
     if caption:
         draw_text(draw, cap_x, cap_y, fit(caption, font("italic", 12), cap_w), font("italic", 12), GREY)
         rule(draw, cap_y + 15, cap_x, cap_x + cap_w, 1, HAIR)
         return cap_y + 18
     return y + ph + 6
+
+
+def fill_two_cols(draw, x, y, w, target, texts, size=15, drop=False) -> int:
+    """Replace a missing plate with two columns of type. No empty well."""
+    gutter = 12
+    colw = max(40, (int(w) - gutter) // 2)
+    f = font("regular", size)
+    lh = line_height(f, 1.26)
+    pool = [t for t in (texts if isinstance(texts, (list, tuple)) else [texts]) if str(t).strip()]
+    if not pool:
+        return target
+
+    def pour(xx: int, first_drop: bool) -> None:
+        yy = y
+        i = 0
+        while yy + lh <= target and i < 80:
+            text = pool[i % len(pool)]
+            n = max(1, (target - yy) // lh)
+            prev = yy
+            if first_drop and i == 0:
+                yy = draw_drop_cap(draw, xx, yy, text, f, colw, n)
+            else:
+                yy = draw_paragraph(draw, xx, yy, text, f, colw, n, INK, True, 1.26, floor=target)
+            if yy <= prev:
+                break
+            i += 1
+
+    pour(x, drop)
+    pour(x + colw + gutter, False)
+    mid = x + colw + gutter // 2
+    draw.line([(mid, y), (mid, target)], fill=HAIR, width=1)
+    return target
 
 
 def place_hero(img: Image.Image, draw, y, url: str, caption: str = "", floor: int | None = None) -> int:
@@ -655,10 +717,14 @@ def wrap_drop(text: str, f: ImageFont.FreeTypeFont, width: int, cap_w: int,
     if max_lines is not None and len(lines) > max_lines:
         lines = lines[:max_lines]
         last, ind = lines[-1]
-        avail = max(1, width - ind - 2)
-        while last and ink_width(f, last + "…") > avail:
-            last = last[:-1].rstrip()
-        lines[-1] = (last + "…", ind)
+        last = last.rstrip("…,. ")
+        cut = max(last.rfind("."), last.rfind("!"), last.rfind("?"))
+        if cut >= 8:
+            last = last[: cut + 1]
+        if last:
+            lines[-1] = (last, ind)
+        else:
+            lines.pop()
     return lines
 
 
@@ -707,18 +773,22 @@ def _pref(ed: dict, key: str, default: str) -> str:
 
 def pick_template(ed: dict) -> str:
     """Owner pick from config/edition, else rotate the three faces."""
-    forced = _pref(ed, "template", "auto")
+    forced = _pref(ed, "template", "planet")
     if forced in TEMPLATES:
         return forced
-    n = int(ed.get("edition_number") or 1)
-    return TEMPLATES[(n - 1) % len(TEMPLATES)]
+    if forced == "auto":
+        n = int(ed.get("edition_number") or 1)
+        return TEMPLATES[(n - 1) % len(TEMPLATES)]
+    return "planet"
 
 
 def pick_photos(ed: dict, template: str) -> str:
-    """Herald is always sepia. Times/Planet: ink or color."""
+    """Herald is sepia. Planet is always color. Times: ink or color."""
     if template == "herald":
         return "sepia"
-    want = _pref(ed, "photos", "bw")
+    if template == "planet":
+        return "color"
+    want = _pref(ed, "photos", "color")
     if want in ("color", "colour", "colorido"):
         return "color"
     return "ink"
@@ -810,9 +880,21 @@ def render_times(ed: dict, out_path, date_str: str) -> dict:
     hero_url, hero_credit = pick_hero(ed)
     if not hero_credit:
         hero_credit = (lead.get("source") or "").split("·")[0].strip()
-    photo_bottom = place_photo(
-        img, d, right_x, y, right_w, 380, hero_url, hero_credit, floor=H - 200, mode="natural",
-    )
+    photo_bottom = y
+    if hero_url:
+        photo_bottom = place_photo(
+            img, d, right_x, y, right_w, 380, hero_url, hero_credit, floor=H - 200, mode="natural",
+        )
+    if photo_bottom <= y:
+        overflow = [article]
+        feat_pre = ed.get("feature") if isinstance(ed.get("feature"), dict) else {}
+        if feat_pre.get("body"):
+            overflow.append(feat_pre["body"])
+        for sec in sections:
+            for it in sec.get("items") or []:
+                if it.get("body"):
+                    overflow.append(it["body"])
+        photo_bottom = fill_two_cols(d, right_x, y, right_w, y + 380, overflow, size=16)
 
     wx_box_h = 40
     box(d, right_x, photo_bottom + 6, right_w, wx_box_h, 1)
@@ -903,6 +985,10 @@ def render_times(ed: dict, out_path, date_str: str) -> dict:
         if furl:
             feat_photo_b = place_photo(img, d, col_x[3], fy0, colw, 150, furl, fcap, floor=col_bottom)
         fbody = c.clip(feat.get("body", ""), 900)
+        if feat_photo_b <= fy0:
+            well_target = max(y + 150, fy0 + 150)
+            extra_f = [fbody] if fbody else [feat.get("dek") or feat.get("headline") or ""]
+            feat_photo_b = fill_two_cols(d, col_x[3], fy0, colw, well_target, extra_f, size=14)
         if fbody:
             fw = (feat_w - 12) // 2
             fl = wrap(fbody, font("regular", 15), fw)
@@ -915,7 +1001,7 @@ def render_times(ed: dict, out_path, date_str: str) -> dict:
             b1 = draw_paragraph(d, col_x[0], y, " ".join(fwords[:n_f]), font("regular", 15), fw, max_fl, INK, True, 1.26)
             b2 = draw_paragraph(d, col_x[0] + fw + 12, y, " ".join(fwords[n_f:]), font("regular", 15), fw, max_fl, INK, True, 1.26)
             y = max(b1, b2, feat_photo_b) + 8
-        elif furl:
+        else:
             y = max(y, feat_photo_b) + 8
         y = rule(d, y, weight=1)
         y += 10

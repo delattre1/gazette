@@ -5,9 +5,17 @@
 # Downloaded to register the Index page; never commit it.
 /agent_index_client.py
 /_register_index.sh
+/_apply_cron.py
+
+# Next.js landing page
+/site/node_modules/
+/site/.next/
+/site/out/
 
 # Local test output
 /out/
+/tmp-state/
+/tmp-editions/
 __pycache__/
 *.pyc
 
@@ -20,3 +28,6 @@ docs/sample-planet.png
 docs/sample-herald.png
 docs/sample-edition.png
 docs/_*.png
+
+.vercel
+.env*

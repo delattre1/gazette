@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""gather.py — collect today's raw material into today.json.
+"""gather.py: collect today's raw material into today.json.
 
 Deterministic and model-free: weather, headlines per topic, Hacker News, the
 owner's GitHub, the calendar when Google is connected, and "on this day".
@@ -18,7 +18,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 import common as c
-from images import enrich_items, rss_image
+from images import enrich_items, ensure_hero, rss_image
 
 TOPIC_ITEMS = 6
 HN_ITEMS = 10
@@ -248,8 +248,8 @@ def main() -> int:
         "city": (cfg.get("location") or {}).get("name") or cfg.get("city"),
         "language": lang,
         "units": cfg.get("units"),
-        "template": cfg.get("template") or "auto",
-        "photos": cfg.get("photos") or "bw",
+        "template": cfg.get("template") or "planet",
+        "photos": cfg.get("photos") or "color",
         "weather": _attempt("weather", lambda: weather(cfg, today)),
         "topics": topics(cfg),
         "hackernews": _attempt("hackernews", hackernews),
@@ -259,11 +259,22 @@ def main() -> int:
         "on_this_day": _attempt("on_this_day", lambda: on_this_day(today, lang)),
     }
     attached = 0
+    all_items: list = []
     for block in out.get("topics") or []:
         if isinstance(block, dict) and isinstance(block.get("items"), list):
             attached += enrich_items(block["items"], limit=4, hint=block.get("topic") or "")
+            all_items.extend(block["items"])
     if isinstance(out.get("hackernews"), list):
         attached += enrich_items(out["hackernews"], limit=4)
+        all_items.extend(out["hackernews"])
+    hints = [out.get("city") or ""]
+    for block in out.get("topics") or []:
+        if isinstance(block, dict) and block.get("topic"):
+            hints.append(block["topic"])
+    hero = ensure_hero(all_items, hints)
+    if hero:
+        out["hero_image"] = {"url": hero, "credit": out.get("city") or ""}
+        attached = max(attached, 1)
     c.write_json(c.TODAY_PATH, out)
     sizes = {k: (len(v) if isinstance(v, list) else ("error" if isinstance(v, dict) and "error" in v else "ok"))
              for k, v in out.items() if k in ("topics", "hackernews", "github", "calendar", "on_this_day", "weather")}

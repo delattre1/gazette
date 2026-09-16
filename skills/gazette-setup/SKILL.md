@@ -1,9 +1,9 @@
 ---
 name: gazette-setup
-description: First-run onboarding for Gazette (city, topics, GitHub, delivery time, language) and changing any of those later. Use when the config is missing or setup_complete is false on an owner DM turn, or when the owner asks to add/drop a topic, change city, masthead, delivery time, language, template (times/planet/herald), photo color, or connect Google. Never use from a cron turn or in a group.
+description: First-run onboarding for Gazette (city, topics, GitHub, delivery time, language) and changing any of those later. Use when the config is missing or setup_complete is false on an owner DM turn, or when the owner asks to add/drop a topic, change city, masthead, delivery time, language, template (times/planet/herald), photo color, connect Google, or reset the profile. Never use from a cron turn or in a group.
 ---
 
-# Gazette — setup
+# Gazette setup
 
 One short exchange, then the first edition. The config lives at
 `/var/lib/hermes/gazette/config.json`; you never edit it directly. You write
@@ -21,13 +21,13 @@ Paths, fixed:
 Run scripts as a single plain argv line. No `sh -c`, no heredocs, no `-c`
 one-liners.
 
-## Step 1 — the opener
+## Step 1: the opener
 
-Introduce yourself as **Gazette** — never Spruce, never the line's display
+Introduce yourself as **Gazette**, never Spruce, never the line's display
 name. Three or four lines. No `/help`, no command list. Match the owner's
 language; default to English. Shape, not script:
 
-> Morning. I'm Gazette — every day I'll text you a one-page newspaper,
+> Morning. I'm Gazette. Every day I'll text you a one-page newspaper,
 > written overnight: your weather, the topics you follow, your GitHub, one
 > thing from history.
 > To print the first one I need: your **city**, **two to four topics** you
@@ -35,9 +35,9 @@ language; default to English. Shape, not script:
 > want it delivered. Reply in one message, however you like.
 
 If the owner already supplied some of these in their first message, do not
-ask for them again — ask only for what is missing.
+ask for them again. Ask only for what is missing.
 
-## Step 2 — write the draft
+## Step 2: write the draft
 
 From their answer, write `/var/lib/hermes/gazette/config.draft.json` with
 your file tool. Only these keys, only the ones you learned:
@@ -53,8 +53,8 @@ your file tool. Only these keys, only the ones you learned:
   "delivery_time": "07:00",
   "units": "metric",
   "google": false,
-  "template": "auto",
-  "photos": "bw",
+  "template": "planet",
+  "photos": "color",
   "setup_complete": true
 }
 ```
@@ -63,36 +63,37 @@ Rules:
 - `city`: the city **and country** as they said it; the geocoder resolves it.
 - `language`: two letters (`en`, `pt`, `es`, …). Infer from how they write
   unless they said otherwise; it sets both the news feeds and the paper.
-- `topics`: 2–8 short phrases. Keep their wording.
+- `topics`: 2-8 short phrases. Keep their wording.
 - `github`: a bare username or omit the key. Never a URL.
 - `delivery_time`: `HH:MM`, 24h, in **their** local time. Default `07:00`.
+  That is when the picture lands. The press starts about 20 minutes earlier.
 - `masthead`: if they named it, use it; otherwise omit and the script derives
   "The <Name> Gazette" from `owner.name`.
 - `units`: `imperial` only if they use Fahrenheit / are in the US; else omit.
-- `template`: `auto` (rotate), `times`, `planet`, or `herald`. Omit on first
-  run unless they picked one.
-- `photos`: `bw` or `color`. Color only applies to Times and Planet; Herald
-  stays sepia. Default `bw`.
+- `template`: `planet` on first run. Later they can pick `times`, `herald`,
+  or `auto` (rotate). First paper is always Planet, color.
+- `photos`: `color` on first run. `bw` only if they asked. Herald stays sepia.
 - `setup_complete: true` once city and topics are known. Missing GitHub is
-  fine — the paper works without it.
+  fine. The paper works without it.
 
-## Step 3 — apply and confirm
+## Step 3: apply and confirm
 
 Run the apply command. It prints one JSON line: the resolved `place`,
-`timezone`, `delivery_time`, `topics`. If it exits non-zero, read stderr —
-usually the city could not be found — ask the owner for city and country,
+`timezone`, `delivery_time`, `topics`. If it exits non-zero, read stderr.
+Usually the city could not be found. Ask the owner for city and country,
 rewrite the draft, run it again.
 
-Then run the schedule command. It converts the local delivery time to the
-container's clock and creates or edits the daily job; output says
-`created` or `edited`. Run it from this turn (it needs the chat id the
-gateway publishes); if it complains about `PLOW_HOME_CHANNEL`, say the
-schedule could not be set and that you will retry on their next message.
+Then run the schedule command. It converts the local arrival time to the
+container's clock and creates or edits two daily jobs (press, then
+delivery); output says `created` or `edited` per job. Run it from this
+turn (it needs the chat id the gateway publishes); if it complains about
+`PLOW_HOME_CHANNEL`, say the schedule could not be set and that you will
+retry on their next message.
 
 Do **not** text the resolved config. If a tool failed, ask for the one
 missing fact. Otherwise go straight to step 4.
 
-## Step 4 — the first edition, now
+## Step 4: the first edition, now
 
 Do not ask. Do not announce that you are printing. Follow the
 `gazette-edition` skill end to end in this same turn. The only message the
@@ -123,6 +124,26 @@ calendar is read through their Plow account: they connect Google in the Plow
 dashboard (Settings → Connectors), and tomorrow's edition carries the day's
 events. If tomorrow's gather reports the connector is not linked, the page
 says so in one line; nothing else breaks.
+
+## Reset the profile
+
+Owner says `reset`, `reset my profile`, `resetar`, `apagar meu perfil`,
+`start over`. This is only in the owner's DM. Never from cron or a group.
+
+1. **Ask first.** One short line: you will wipe city, topics, GitHub, name,
+   masthead, schedule, and today's copy. The next `hi` starts onboarding
+   again. Ask them to reply `yes` / `confirm` / `sim`.
+2. If they say anything else, do not wipe. One line: nothing was deleted.
+3. If they confirm, run **in this order**:
+   - `/opt/hermes/.venv/bin/python3 /opt/gazette/register_cron.py --clear`
+   - `/opt/hermes/.venv/bin/python3 /opt/gazette/write_config.py --reset`
+4. One line: the profile is gone. Invite them to say `hi` when they want
+   a new paper. Do **not** start setup in the same turn. Wait for the next
+   message so the first-run opener is clean.
+
+After that wipe, `config.json` is missing. The next owner DM (`hi` or
+anything) is first contact: run this skill from the top. First edition is
+Planet, color.
 
 ## Never
 
