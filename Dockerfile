@@ -7,7 +7,7 @@
 # The tag is an immutable `base-<sha>` naming one commit of the base's source
 # repo. Never a moving tag: every install inherits this exact filesystem while
 # holding its owner's Plow credential.
-FROM public.ecr.aws/e1h7x4a2/plow-cloud-agents:base-8710797b6409c77df560c6198407765d138ea617@sha256:b9627febe57e34ec0df373709ad91a27a7fda68093e76d519678cac1012614f9
+FROM public.ecr.aws/e1h7x4a2/plow-cloud-agents:base-51f83158a70a383f03a4d03dbd8b6ea102cf0361@sha256:253d7ed3409effa7fa59113d93b4b79bb731d8264cdaf4cd60294924d0110a2e
 
 # Identity. plow-init writes the home's SOUL.md on every boot as the base
 # persona followed by this file. Nothing is COPYed to /var/lib/hermes/SOUL.md.
