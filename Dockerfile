@@ -1,13 +1,13 @@
 # Gazette: a Plow/Hermes agent that prints your morning newspaper.
 #
-# A variant of plow-pbc/plow-hermes-agent: persona + skills + one background
-# service (the Agent Index reporter). The base owns boot, credentials, the
-# phone line and the model; this file adds only what is Gazette's.
+# A variant of plow-pbc/plow-hermes-agent: persona + skills. The base owns
+# boot, credentials, the phone line, the model and the Agent Index reporter;
+# this file adds only what is Gazette's.
 #
 # The tag is an immutable `base-<sha>` naming one commit of the base's source
 # repo. Never a moving tag: every install inherits this exact filesystem while
 # holding its owner's Plow credential.
-FROM public.ecr.aws/e1h7x4a2/plow-cloud-agents:base-51f83158a70a383f03a4d03dbd8b6ea102cf0361@sha256:253d7ed3409effa7fa59113d93b4b79bb731d8264cdaf4cd60294924d0110a2e
+FROM public.ecr.aws/e1h7x4a2/plow-cloud-agents:base-ef0019372ff8bca593611b31ebd2e08f9f1458ff@sha256:a8a2f97ad78b8192d80a984dce81d3bf5a9a883d18cb7b677704913a09b56aee
 
 # Identity. plow-init writes the home's SOUL.md on every boot as the base
 # persona followed by this file. Nothing is COPYed to /var/lib/hermes/SOUL.md.
@@ -43,25 +43,10 @@ RUN set -eu; \
       || uv pip install --python /opt/hermes/.venv/bin/python requests==2.32.3; \
     /opt/hermes/.venv/bin/python -c 'from PIL import Image, ImageFont; ImageFont.truetype("/opt/gazette/fonts/OldStandard-Regular.ttf", 24); Image.new("RGB", (8, 8))'
 
-# The usage reporter, fetched at build from the commit vendor/client.pin names
-# and checked against the hash beside it. plow-pbc/agent-index-client owns
-# that file; this repo pins a revision rather than carrying a copy.
-COPY vendor/client.pin /opt/plow/agent-index-client.pin
-RUN set -eu; \
-    sha="$(sed -n 's/^sha=//p' /opt/plow/agent-index-client.pin)"; \
-    want="$(sed -n 's/^sha256=//p' /opt/plow/agent-index-client.pin)"; \
-    path="$(sed -n 's/^path=//p' /opt/plow/agent-index-client.pin)"; \
-    curl -fsS --max-time 60 -o /opt/plow/agent-index-client.py \
-      "https://raw.githubusercontent.com/plow-pbc/agent-index-client/${sha}/${path}"; \
-    got="$(sha256sum /opt/plow/agent-index-client.py | cut -d' ' -f1)"; \
-    [ "$got" = "$want" ] || { echo "agent-index client is $got, pin says $want" >&2; exit 1; }; \
-    chmod 0644 /opt/plow/agent-index-client.py
-
-# s6: the agent-index longrun (depends on plow-init) and its bundle entry.
-# The run script's mode is set here rather than trusted from the checkout: a
-# clone on Windows does not carry the executable bit.
-COPY image/s6-overlay/ /etc/s6-overlay/
-RUN chmod 0755 /etc/s6-overlay/s6-rc.d/agent-index/run
+# Usage reporting is the base's own Agent Index reporter (pinned client + s6
+# "agent-index" longrun). It reads AGENT_ID; the Plow cloud passes no
+# environment, so the id is baked here. Compose sets the same value.
+ENV AGENT_ID=gazette
 
 # cont-init: publishes HERMES_MEDIA_ALLOW_DIRS so the gateway will deliver the
 # PNGs the producer writes under /srv/gazette.

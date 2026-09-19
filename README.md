@@ -133,7 +133,7 @@ Config lives at `/var/lib/hermes/gazette/config.json` on the `gazette-home` volu
 
 ## Agent Index
 
-The image reports token usage to the [Agent Index](https://aiworthusing.com/agent-index) under `gazette` (`AGENT_ID` in `compose.yml`). Each install is one row. To stop reporting, remove `image/s6-overlay/` before you build.
+The image reports token usage to the [Agent Index](https://aiworthusing.com/agent-index) under `gazette` (`AGENT_ID` in `compose.yml`). Each install is one row. The reporter is the Plow base image's own; to stop reporting, set `AGENT_ID` empty in `compose.yml`.
 
 ## Credits
 
